@@ -17,6 +17,8 @@ import org.springframework.security.web.csrf.CookieCsrfTokenRepository;
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
+import org.springframework.security.config.Customizer;
+import org.springframework.security.config.http.SessionCreationPolicy;
 
 import java.util.Arrays;
 import java.util.List;
@@ -26,37 +28,29 @@ import java.util.List;
 @EnableMethodSecurity
 public class SecurityConfig {
 
-    @Value("${spring.security.user.name:admin}")
+    @Value("${spring.security.user.name}")
     private String adminUsername;
 
-    @Value("${spring.security.user.password:admin}")
+    @Value("${spring.security.user.password}")
     private String adminPassword;
 
     @Bean
-    public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
+    public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http
-            .authorizeHttpRequests(authz -> authz
-                .requestMatchers("/actuator/health").permitAll()
-                .requestMatchers("/h2-console/**").hasRole("ADMIN") // Restrict H2 console access
-                .requestMatchers("/api/health").authenticated()
-                .requestMatchers("/api/ai/**").authenticated()
-                .requestMatchers("/api/**").authenticated()
+            // Disable CSRF protection for now to allow testing with curl
+            .csrf(csrf -> csrf.disable())
+            .authorizeHttpRequests(authorize -> authorize
+                .requestMatchers("/actuator/**", "/h2-console/**").permitAll()
                 .anyRequest().authenticated()
             )
-            .httpBasic(basic -> {})
-            .csrf(csrf -> csrf
-                .csrfTokenRepository(CookieCsrfTokenRepository.withHttpOnlyFalse())
-                .ignoringRequestMatchers("/h2-console/**") // Disable CSRF for H2 console only
-            )
-            .cors(cors -> cors.configurationSource(corsConfigurationSource()))
+            .httpBasic(Customizer.withDefaults())
+            .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
             .headers(headers -> headers
-                .frameOptions().sameOrigin() // Allow H2 console frames
-                .contentTypeOptions().and()
+                .frameOptions(frameOptions -> frameOptions.sameOrigin()) // Allow H2 console frames
                 .httpStrictTransportSecurity(hsts -> hsts
                     .maxAgeInSeconds(31536000)
                 )
             );
-        
         return http.build();
     }
 

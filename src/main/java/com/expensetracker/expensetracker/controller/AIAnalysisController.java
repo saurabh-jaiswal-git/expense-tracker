@@ -59,13 +59,18 @@ public class AIAnalysisController {
      * @return AI Analysis result
      */
     @PostMapping("/analyze")
-    @PreAuthorize("hasRole('ADMIN') or #request.userId == authentication.principal.id")
-    public ResponseEntity<AIAnalysis> analyzeSpending(@Valid @RequestBody AIAnalysisRequest request) {
-        if (request == null || request.getUserId() == null || request.getTransactions() == null) {
-            return ResponseEntity.badRequest().build();
+    @PreAuthorize("isAuthenticated()")
+    public ResponseEntity<AIAnalysis> analyzeSpending(
+            @Valid @RequestBody SpendingAnalysisRequest request) {
+        logger.info("Received request to analyze spending for userId: {}", request.getUserId());
+        try {
+            AIAnalysis analysis = aiAnalysisService.analyzeUserSpending(request.getUserId(), request.getTransactions());
+            logger.info("Successfully analyzed spending for userId: {}", request.getUserId());
+            return ResponseEntity.ok(analysis);
+        } catch (Exception e) {
+            logger.error("Error analyzing spending for userId: {}", request.getUserId(), e);
+            return ResponseEntity.status(500).build();
         }
-        AIAnalysis analysis = aiAnalysisService.analyzeUserSpending(request.getUserId(), request.getTransactions());
-        return ResponseEntity.ok(analysis);
     }
     
     /**

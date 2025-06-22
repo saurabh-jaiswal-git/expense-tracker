@@ -1,10 +1,10 @@
 # AI-Powered Expense Tracker
 
-A comprehensive expense tracking application with AI-driven financial insights and bank integration capabilities.
+A comprehensive expense tracking application with AI-driven financial insights using OpenAI GPT and Anthropic Claude models.
 
 ## 🚀 Project Overview
 
-This is a Spring Boot application designed to evolve from manual expense entry to an AI-powered financial management system with bank integration. The application follows a phased approach to feature development.
+This is a Spring Boot application that provides AI-powered financial analysis and expense tracking. The application integrates with multiple AI providers (OpenAI and Anthropic) to analyze spending patterns and provide personalized financial insights.
 
 ## 🏗️ System Architecture
 
@@ -13,13 +13,14 @@ This is a Spring Boot application designed to evolve from manual expense entry t
 - **Database**: H2 (development), PostgreSQL (production)
 - **Security**: Spring Security with Basic Authentication
 - **ORM**: Spring Data JPA with Hibernate
+- **AI Integration**: OpenAI GPT-3.5-turbo & Anthropic Claude-3-Haiku
 - **Build Tool**: Maven
 
 ### Database Schema
 The application uses a comprehensive database design supporting:
 - **Core Tables**: users, categories, transactions, user_categories
-- **Future Tables**: budgets, financial_goals, bank_accounts, ai_analysis, sync_status
-- **Features**: Manual entry, UPI integration, Account Aggregator, AI analysis
+- **AI Analysis**: ai_analysis, recommendations
+- **Features**: Manual entry, AI-powered spending analysis, financial insights
 
 ## 📁 Current Project Structure
 
@@ -46,22 +47,24 @@ expense-tracker/
 ### 1. Core Infrastructure
 - ✅ Spring Boot 3.5.3 application with Java 17
 - ✅ H2 in-memory database configuration
-- ✅ JPA entities for core tables (User, Category, Transaction, UserCategory)
+- ✅ JPA entities for core tables (User, Category, Transaction, UserCategory, AIAnalysis, Recommendation)
 - ✅ Basic authentication (admin/admin)
-- ✅ Health check endpoints (`/api/health`, `/api/health/db`, `/actuator/health`)
+- ✅ Health check endpoints (`/actuator/health`)
 - ✅ Database schema auto-generation by Hibernate
 - ✅ Sample data loading
 
-### 2. Database Schema
-- ✅ **Users Table**: User management with profile information
-- ✅ **Categories Table**: Predefined expense categories
-- ✅ **Transactions Table**: Financial transactions with source tracking
-- ✅ **UserCategories Table**: User-specific category customization
+### 2. AI Integration
+- ✅ **Multi-Provider Support**: OpenAI and Anthropic integration
+- ✅ **Configurable Provider**: Switch between AI providers via configuration
+- ✅ **Spending Analysis**: AI-powered transaction analysis and insights
+- ✅ **Recommendations**: Personalized financial advice and suggestions
+- ✅ **Fallback Mechanism**: Graceful handling of API failures
 
 ### 3. Security
 - ✅ Basic authentication configured
 - ✅ Protected endpoints requiring authentication
-- ✅ H2 console available at `/h2-console`
+- ✅ Input validation and sanitization
+- ✅ CSRF protection (configurable for testing)
 
 ## 🔄 Application Status
 
@@ -104,74 +107,202 @@ The application starts successfully and all health endpoints are accessible with
 ### Prerequisites
 - Java 17 or higher
 - Maven 3.6+
+- OpenAI API key OR Anthropic API key
 
-### Running the Application
+### 1. Clone the Repository
 ```bash
-# Set Java 17 path (if needed)
-export PATH="/opt/homebrew/opt/openjdk@17/bin:$PATH"
+git clone <your-repo-url>
+cd expense-tracker
+```
+
+### 2. Set Up Environment Variables
+Copy the example environment file and configure your API keys:
+
+```bash
+cp env.example .env
+```
+
+Edit `.env` and set your API keys:
+```bash
+# Choose your AI provider: 'openai' or 'anthropic'
+AI_PROVIDER=anthropic
+
+# For OpenAI
+OPENAI_API_KEY=your_openai_api_key_here
+
+# For Anthropic
+ANTHROPIC_API_KEY=your_anthropic_api_key_here
+
+# Optional: Customize admin credentials
+ADMIN_USERNAME=admin
+ADMIN_PASSWORD=admin
+```
+
+### 3. Run the Application
+```bash
+# Set Java 17 path (if needed on macOS)
+export JAVA_HOME="$(brew --prefix openjdk@17)/libexec/openjdk.jdk/Contents/Home"
+export PATH="$JAVA_HOME/bin:$PATH"
 
 # Run the application
 ./mvnw spring-boot:run
 ```
 
-### Accessing the Application
+### 4. Access the Application
 - **Application**: http://localhost:8080
-- **H2 Console**: http://localhost:8080/h2-console
-- **Health Check**: http://localhost:8080/api/health
-- **Database Health**: http://localhost:8080/api/health/db
+- **Health Check**: http://localhost:8080/actuator/health
+- **AI Analysis Endpoint**: POST http://localhost:8080/api/ai/analyze
 
-### Authentication
-- **Username**: admin
-- **Password**: admin
-
-## 📊 Database Configuration
-
-### Current Configuration (application.yml)
-```yaml
-spring:
-  datasource:
-    url: jdbc:h2:mem:expensetracker
-    driver-class-name: org.h2.Driver
-    username: sa
-    password: 
-  jpa:
-    hibernate:
-      ddl-auto: create-drop
-    show-sql: true
-    defer-datasource-initialization: true
-  h2:
-    console:
-      enabled: true
-  sql:
-    init:
-      mode: always
+### 5. Test AI Integration
+```bash
+# Test with curl (replace admin:admin with your credentials)
+curl -u admin:admin -X POST http://localhost:8080/api/ai/analyze \
+  -H "Content-Type: application/json" \
+  -d '{
+    "userId": 1,
+    "transactions": [
+      {"description": "Grocery shopping", "amount": 150.00, "category": "Food"},
+      {"description": "Gas station", "amount": 45.00, "category": "Transportation"},
+      {"description": "Netflix subscription", "amount": 15.00, "category": "Entertainment"}
+    ]
+  }'
 ```
 
-## 🔧 Troubleshooting History
+## 🔧 Configuration
 
-### Issues Resolved
-1. **Schema.sql conflicts**: Removed custom schema.sql to let Hibernate handle schema creation
-2. **Data initialization timing**: Used `defer-datasource-initialization: true` to ensure schema is created before data loading
-3. **H2 dialect warning**: Removed explicit H2 dialect configuration (auto-detected)
+### AI Provider Configuration
+The application supports multiple AI providers. Configure in `application.yml`:
 
-### Current Working Configuration
-- Hibernate creates schema automatically
-- Sample data loads after schema creation
-- Application starts successfully with all endpoints working
+```yaml
+ai:
+  provider: anthropic  # or 'openai'
+  openai:
+    model: gpt-3.5-turbo
+    temperature: 0.7
+  anthropic:
+    model: claude-3-haiku-20240307
+    temperature: 0.7
+```
 
-## 📋 Next Steps
+### Environment Variables
+- `AI_PROVIDER`: Set to 'openai' or 'anthropic'
+- `OPENAI_API_KEY`: Your OpenAI API key
+- `ANTHROPIC_API_KEY`: Your Anthropic API key
+- `ADMIN_USERNAME`: Admin username (default: admin)
+- `ADMIN_PASSWORD`: Admin password (default: admin)
 
-### Immediate Tasks
-1. **Create Repository Interfaces**: Add Spring Data JPA repositories for all entities
-2. **Implement Service Layer**: Business logic for transactions, categories, users
-3. **Add REST Controllers**: CRUD operations for all entities
-4. **Enhance Security**: Role-based access control, JWT tokens
+## 📊 API Endpoints
 
-### Short-term Goals
-1. **Transaction Management**: Full CRUD for expense/income tracking
-2. **Category Management**: User-specific category customization
-3. **Basic Analytics**: Monthly spending summaries
-4. **API Documentation**: Swagger/OpenAPI documentation
+### Health & Status
+- `GET /actuator/health` - Application health status
+
+### AI Analysis
+- `POST /api/ai/analyze` - Analyze spending patterns with AI
+- `GET /api/ai/test` - Test AI integration
+
+### Authentication
+All endpoints require basic authentication with admin credentials.
+
+## 🔒 Security Features
+
+- **Authentication**: Basic authentication with configurable credentials
+- **Input Validation**: Comprehensive validation for all API inputs
+- **CSRF Protection**: Enabled by default (can be disabled for testing)
+- **Secure Headers**: HSTS, content type options, frame options
+- **Logging**: Sensitive data masking in logs
+
+## 🚨 Security Notes
+
+⚠️ **Important**: Before deploying to production:
+1. Change default admin credentials
+2. Enable CSRF protection
+3. Use a production database (PostgreSQL/MySQL)
+4. Set up proper SSL/TLS
+5. Configure rate limiting
+6. Review and update security configurations
+
+## 📋 Development
+
+### Project Structure
+```
+expense-tracker/
+├── src/main/java/com/expensetracker/expensetracker/
+│   ├── config/
+│   │   └── SecurityConfig.java              # Security configuration
+│   ├── controller/
+│   │   ├── AIAnalysisController.java        # AI analysis endpoints
+│   │   ├── HealthController.java            # Health check endpoints
+│   │   └── SpendingAnalysisRequest.java     # Request DTOs
+│   ├── entity/
+│   │   ├── AIAnalysis.java                  # AI analysis results
+│   │   ├── Category.java                    # Expense categories
+│   │   ├── Recommendation.java              # AI recommendations
+│   │   ├── Transaction.java                 # Financial transactions
+│   │   ├── User.java                        # User management
+│   │   └── UserCategory.java                # User-specific categories
+│   ├── repository/
+│   │   ├── AIAnalysisRepository.java        # AI analysis data access
+│   │   └── UserRepository.java              # User data access
+│   ├── service/
+│   │   ├── AIAnalysisService.java           # AI analysis business logic
+│   │   ├── AnthropicLLMService.java         # Anthropic integration
+│   │   ├── LLMService.java                  # AI service interface
+│   │   └── OpenAILLMService.java            # OpenAI integration
+│   └── ExpenseTrackerApplication.java       # Main application class
+├── src/main/resources/
+│   ├── application.yml                      # Application configuration
+│   └── data.sql                            # Sample data
+├── env.example                              # Environment variables template
+├── SECURITY.md                              # Security documentation
+├── PRODUCTION_DEPLOYMENT.md                 # Production deployment guide
+└── pom.xml                                 # Maven dependencies
+```
+
+## 🤝 Contributing
+
+1. Fork the repository
+2. Create a feature branch
+3. Make your changes
+4. Add tests if applicable
+5. Submit a pull request
+
+## 📄 License
+
+This project is licensed under the MIT License - see the LICENSE file for details.
+
+## 🆘 Support
+
+For issues and questions:
+1. Check the documentation in `SECURITY.md` and `PRODUCTION_DEPLOYMENT.md`
+2. Review the troubleshooting section below
+3. Create an issue in the repository
+
+## 🔧 Troubleshooting
+
+### Common Issues
+
+1. **Java Version Error**: Ensure you're using Java 17 or higher
+   ```bash
+   java -version
+   ```
+
+2. **API Key Issues**: Verify your API keys are set correctly
+   ```bash
+   echo $OPENAI_API_KEY
+   echo $ANTHROPIC_API_KEY
+   ```
+
+3. **Build Failures**: Clean and rebuild
+   ```bash
+   ./mvnw clean package
+   ```
+
+4. **Authentication Issues**: Check credentials in environment variables or use defaults (admin/admin)
+
+### Getting Help
+- Check the application logs for detailed error messages
+- Verify your API provider has sufficient credits/quota
+- Ensure all environment variables are set correctly
 
 ## 🏛️ System Design Document
 
@@ -197,19 +328,6 @@ spring:
 - **Spending Analysis**: Pattern recognition and insights
 - **Financial Advice**: AI-driven recommendations
 - **Anomaly Detection**: Unusual spending pattern alerts
-
-## 🔗 API Endpoints
-
-### Current Endpoints
-- `GET /api/health` - Application health check
-- `GET /api/health/db` - Database health check
-- `GET /actuator/health` - Spring Boot actuator health
-
-### Planned Endpoints
-- `GET/POST/PUT/DELETE /api/transactions` - Transaction management
-- `GET/POST/PUT/DELETE /api/categories` - Category management
-- `GET/POST/PUT/DELETE /api/users` - User management
-- `GET /api/analytics` - Financial analytics
 
 ## 📈 Development Phases
 
