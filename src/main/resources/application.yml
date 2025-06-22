@@ -52,6 +52,44 @@ management:
     health:
       show-details: always
 
+# AI/LLM Configuration
+ai:
+  llm:
+    provider: openai  # Options: openai, anthropic, local
+    api-key: ${OPENAI_API_KEY:}  # Set via environment variable
+    model: gpt-4  # Model to use (gpt-4, gpt-3.5-turbo, claude-3, etc.)
+    max-tokens: 1000
+    temperature: 0.7
+  
+  analysis:
+    enabled: true
+    auto-analyze: true
+    analysis-interval: 24h
+  
+  prompts:
+    spending-analysis: |
+      Analyze the following spending data for user {userId}:
+      {transactions}
+      
+      Provide insights on:
+      1. Spending patterns
+      2. Category distribution
+      3. Potential savings opportunities
+      4. Budget recommendations
+      
+    categorization: |
+      Categorize the following transaction description: "{description}"
+      Available categories: {categories}
+      Return only the category name.
+    
+    recommendations: |
+      Based on the user's financial profile and spending patterns,
+      generate 3-5 actionable recommendations to improve financial health.
+      
+      User Context: {userContext}
+      
+      Focus on practical, achievable advice.
+
 # Logging Configuration
 logging:
   level:
@@ -68,5 +106,5 @@ app:
     manual-entry: true
     upi-integration: false
     bank-integration: false
-    ai-analysis: false
+    ai-analysis: true
     account-aggregator: false 
