@@ -40,7 +40,7 @@ public class SecurityConfig {
             // Disable CSRF protection for now to allow testing with curl
             .csrf(csrf -> csrf.disable())
             .authorizeHttpRequests(authorize -> authorize
-                .requestMatchers("/actuator/**", "/h2-console/**").permitAll()
+                .requestMatchers("/actuator/**", "/h2-console/**", "/api/budgets/**").permitAll()
                 .anyRequest().authenticated()
             )
             .httpBasic(Customizer.withDefaults())
