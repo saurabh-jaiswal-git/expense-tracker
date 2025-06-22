@@ -9,8 +9,14 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
+import jakarta.validation.Valid;
+import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Positive;
+import jakarta.validation.constraints.Size;
 import java.util.List;
 import java.util.Map;
 
@@ -20,6 +26,7 @@ import java.util.Map;
  */
 @RestController
 @RequestMapping("/api/ai")
+@Validated
 public class AIAnalysisController {
     
     private static final Logger logger = LoggerFactory.getLogger(AIAnalysisController.class);
@@ -33,7 +40,8 @@ public class AIAnalysisController {
      * @return AI Analysis result
      */
     @GetMapping("/analysis/{userId}")
-    public ResponseEntity<AIAnalysis> getAnalysis(@PathVariable Long userId) {
+    @PreAuthorize("hasRole('ADMIN') or #userId == authentication.principal.id")
+    public ResponseEntity<AIAnalysis> getAnalysis(@PathVariable @Positive Long userId) {
         try {
             logger.info("Generating AI analysis for user: {}", userId);
             // For now, return mock data since we need transactions for real analysis
@@ -51,7 +59,8 @@ public class AIAnalysisController {
      * @return AI Analysis result
      */
     @PostMapping("/analyze")
-    public ResponseEntity<AIAnalysis> analyzeSpending(@RequestBody AIAnalysisRequest request) {
+    @PreAuthorize("hasRole('ADMIN') or #request.userId == authentication.principal.id")
+    public ResponseEntity<AIAnalysis> analyzeSpending(@Valid @RequestBody AIAnalysisRequest request) {
         if (request == null || request.getUserId() == null || request.getTransactions() == null) {
             return ResponseEntity.badRequest().build();
         }
@@ -65,7 +74,8 @@ public class AIAnalysisController {
      * @return List of recommendations
      */
     @GetMapping("/recommendations/{userId}")
-    public ResponseEntity<List<Recommendation>> getRecommendations(@PathVariable Long userId) {
+    @PreAuthorize("hasRole('ADMIN') or #userId == authentication.principal.id")
+    public ResponseEntity<List<Recommendation>> getRecommendations(@PathVariable @Positive Long userId) {
         try {
             logger.info("Generating AI recommendations for user: {}", userId);
             List<Recommendation> recommendations = aiAnalysisService.generateRecommendations(userId);
@@ -82,15 +92,10 @@ public class AIAnalysisController {
      * @return Suggested category name
      */
     @PostMapping("/categorize")
-    public ResponseEntity<Map<String, String>> categorizeTransaction(@RequestBody Map<String, String> request) {
+    public ResponseEntity<Map<String, String>> categorizeTransaction(@Valid @RequestBody CategorizationRequest request) {
         try {
-            String description = request.get("description");
-            if (description == null || description.trim().isEmpty()) {
-                return ResponseEntity.badRequest().body(Map.of("error", "Description is required"));
-            }
-            
-            logger.info("Categorizing transaction: {}", description);
-            String category = aiAnalysisService.categorizeTransaction(description);
+            logger.info("Categorizing transaction: {}", request.getDescription());
+            String category = aiAnalysisService.categorizeTransaction(request.getDescription());
             return ResponseEntity.ok(Map.of("category", category));
         } catch (Exception e) {
             logger.error("Error categorizing transaction: {}", e.getMessage(), e);
@@ -104,7 +109,8 @@ public class AIAnalysisController {
      * @return Budget recommendation text
      */
     @GetMapping("/budget/{userId}")
-    public ResponseEntity<Map<String, String>> getBudgetRecommendation(@PathVariable Long userId) {
+    @PreAuthorize("hasRole('ADMIN') or #userId == authentication.principal.id")
+    public ResponseEntity<Map<String, String>> getBudgetRecommendation(@PathVariable @Positive Long userId) {
         try {
             logger.info("Generating budget recommendation for user: {}", userId);
             String recommendation = aiAnalysisService.generateBudgetRecommendation(userId);
@@ -121,7 +127,8 @@ public class AIAnalysisController {
      * @return Anomaly detection results
      */
     @GetMapping("/anomalies/{userId}")
-    public ResponseEntity<Map<String, Object>> detectAnomalies(@PathVariable Long userId) {
+    @PreAuthorize("hasRole('ADMIN') or #userId == authentication.principal.id")
+    public ResponseEntity<Map<String, Object>> detectAnomalies(@PathVariable @Positive Long userId) {
         try {
             logger.info("Detecting anomalies for user: {}", userId);
             Map<String, Object> anomalies = aiAnalysisService.detectAnomalies(userId);
@@ -138,11 +145,8 @@ public class AIAnalysisController {
      * @return AI Analysis result (not saved to database)
      */
     @PostMapping("/test")
-    public ResponseEntity<Map<String, Object>> testAI(@RequestBody AIAnalysisRequest request) {
-        if (request == null || request.getUserId() == null || request.getTransactions() == null) {
-            return ResponseEntity.badRequest().body(Map.of("error", "Missing required fields"));
-        }
-        
+    @PreAuthorize("hasRole('ADMIN') or #request.userId == authentication.principal.id")
+    public ResponseEntity<Map<String, Object>> testAI(@Valid @RequestBody AIAnalysisRequest request) {
         try {
             logger.info("Testing AI integration for user {} with {} transactions", request.getUserId(), request.getTransactions().size());
             
@@ -202,40 +206,65 @@ public class AIAnalysisController {
     @GetMapping("/health")
     public ResponseEntity<Map<String, Object>> healthCheck() {
         try {
-            Map<String, Object> status = Map.of(
+            boolean llmAvailable = aiAnalysisService.getLlmService().isAvailable();
+            return ResponseEntity.ok(Map.of(
                 "status", "healthy",
-                "service", "AI Analysis",
-                "timestamp", System.currentTimeMillis()
-            );
-            return ResponseEntity.ok(status);
+                "llm_available", llmAvailable,
+                "llm_provider", aiAnalysisService.getLlmService().getProvider(),
+                "llm_model", aiAnalysisService.getLlmService().getModel()
+            ));
         } catch (Exception e) {
-            logger.error("AI service health check failed: {}", e.getMessage(), e);
-            return ResponseEntity.internalServerError().body(Map.of(
+            logger.error("Health check failed: {}", e.getMessage(), e);
+            return ResponseEntity.status(503).body(Map.of(
                 "status", "unhealthy",
                 "error", e.getMessage()
             ));
         }
     }
-}
-
-class AIAnalysisRequest {
-    private Long userId;
-    private List<Map<String, Object>> transactions;
-
-    // Getters and Setters
-    public Long getUserId() {
-        return userId;
+    
+    /**
+     * Request DTO for AI analysis
+     */
+    public static class AIAnalysisRequest {
+        @NotNull
+        @Positive
+        private Long userId;
+        
+        @NotNull
+        @Size(min = 1, max = 1000)
+        private List<Map<String, Object>> transactions;
+        
+        public Long getUserId() {
+            return userId;
+        }
+        
+        public void setUserId(Long userId) {
+            this.userId = userId;
+        }
+        
+        public List<Map<String, Object>> getTransactions() {
+            return transactions;
+        }
+        
+        public void setTransactions(List<Map<String, Object>> transactions) {
+            this.transactions = transactions;
+        }
     }
-
-    public void setUserId(Long userId) {
-        this.userId = userId;
-    }
-
-    public List<Map<String, Object>> getTransactions() {
-        return transactions;
-    }
-
-    public void setTransactions(List<Map<String, Object>> transactions) {
-        this.transactions = transactions;
+    
+    /**
+     * Request DTO for transaction categorization
+     */
+    public static class CategorizationRequest {
+        @NotNull
+        @Size(min = 1, max = 500)
+        private String description;
+        
+        public String getDescription() {
+            return description;
+        }
+        
+        public void setDescription(String description) {
+            this.description = description;
+        }
     }
 } 

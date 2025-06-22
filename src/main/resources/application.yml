@@ -13,24 +13,24 @@ spring:
   jpa:
     hibernate:
       ddl-auto: create-drop
-    show-sql: true
+    show-sql: false
     properties:
       hibernate:
-        format_sql: true
+        format_sql: false
         dialect: org.hibernate.dialect.H2Dialect
     defer-datasource-initialization: true
   
   # H2 Console Configuration
   h2:
     console:
-      enabled: true
+      enabled: false
       path: /h2-console
   
-  # Security Configuration (temporary for development)
+  # Security Configuration
   security:
     user:
-      name: admin
-      password: admin
+      name: ${ADMIN_USERNAME:admin}
+      password: ${ADMIN_PASSWORD:admin}
   
   # SQL Initialization (only data, not schema)
   sql:
@@ -41,16 +41,26 @@ spring:
 # Server Configuration
 server:
   port: 8080
+  # Security headers
+  servlet:
+    session:
+      cookie:
+        http-only: true
+        secure: false
+        same-site: strict
 
 # Actuator Configuration
 management:
   endpoints:
     web:
       exposure:
-        include: health,info,metrics,env
+        include: health
+      base-path: /actuator
   endpoint:
     health:
-      show-details: always
+      show-details: when-authorized
+  security:
+    enabled: true
 
 # AI/LLM Configuration
 ai:
@@ -99,12 +109,15 @@ ai:
 # Logging Configuration
 logging:
   level:
-    com.expensetracker: DEBUG
-    org.springframework.security: DEBUG
-    org.hibernate.SQL: DEBUG
-    org.hibernate.type.descriptor.sql.BasicBinder: TRACE
+    com.expensetracker: INFO
+    org.springframework.security: WARN
+    org.hibernate.SQL: WARN
+    org.hibernate.type.descriptor.sql.BasicBinder: WARN
   pattern:
-    console: "%d{yyyy-MM-dd HH:mm:ss} - %msg%n"
+    console: "%d{yyyy-MM-dd HH:mm:ss} - %-5level - %logger{36} - %msg%n"
+  # Mask sensitive data in logs
+  pattern:
+    console: "%d{yyyy-MM-dd HH:mm:ss} - %-5level - %logger{36} - %replace(%msg){'Bearer [^\\s]+', 'Bearer ***'}%n"
 
 # Feature Flags Configuration
 app:
