@@ -2,7 +2,9 @@ package com.expensetracker.expensetracker.controller;
 
 import com.expensetracker.expensetracker.entity.AIAnalysis;
 import com.expensetracker.expensetracker.entity.Recommendation;
+import com.expensetracker.expensetracker.entity.Transaction;
 import com.expensetracker.expensetracker.service.AIAnalysisService;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -34,7 +36,8 @@ public class AIAnalysisController {
     public ResponseEntity<AIAnalysis> getAnalysis(@PathVariable Long userId) {
         try {
             logger.info("Generating AI analysis for user: {}", userId);
-            AIAnalysis analysis = aiAnalysisService.analyzeUserSpending(userId);
+            // For now, return mock data since we need transactions for real analysis
+            AIAnalysis analysis = aiAnalysisService.createMockAnalysis(userId, "SPENDING_PATTERN", "Mock analysis for user " + userId);
             return ResponseEntity.ok(analysis);
         } catch (Exception e) {
             logger.error("Error generating analysis for user {}: {}", userId, e.getMessage(), e);
@@ -48,19 +51,12 @@ public class AIAnalysisController {
      * @return AI Analysis result
      */
     @PostMapping("/analyze")
-    public ResponseEntity<AIAnalysis> analyzeSpending(@RequestBody Map<String, Object> request) {
-        try {
-            Long userId = Long.valueOf(request.get("userId").toString());
-            String analysisType = (String) request.get("analysisType");
-            Map<String, Object> data = (Map<String, Object>) request.get("data");
-            
-            logger.info("Analyzing spending for user: {}, type: {}", userId, analysisType);
-            AIAnalysis analysis = aiAnalysisService.analyzeUserSpending(userId);
-            return ResponseEntity.ok(analysis);
-        } catch (Exception e) {
-            logger.error("Error analyzing spending: {}", e.getMessage(), e);
-            return ResponseEntity.internalServerError().build();
+    public ResponseEntity<AIAnalysis> analyzeSpending(@RequestBody AIAnalysisRequest request) {
+        if (request == null || request.getUserId() == null || request.getTransactions() == null) {
+            return ResponseEntity.badRequest().build();
         }
+        AIAnalysis analysis = aiAnalysisService.analyzeUserSpending(request.getUserId(), request.getTransactions());
+        return ResponseEntity.ok(analysis);
     }
     
     /**
@@ -137,6 +133,69 @@ public class AIAnalysisController {
     }
     
     /**
+     * Test AI integration without database persistence
+     * @param request Analysis request containing userId, analysisType, and data
+     * @return AI Analysis result (not saved to database)
+     */
+    @PostMapping("/test")
+    public ResponseEntity<Map<String, Object>> testAI(@RequestBody AIAnalysisRequest request) {
+        if (request == null || request.getUserId() == null || request.getTransactions() == null) {
+            return ResponseEntity.badRequest().body(Map.of("error", "Missing required fields"));
+        }
+        
+        try {
+            logger.info("Testing AI integration for user {} with {} transactions", request.getUserId(), request.getTransactions().size());
+            
+            if (!aiAnalysisService.getLlmService().isAvailable()) {
+                return ResponseEntity.ok(Map.of(
+                    "status", "mock",
+                    "message", "LLM service not available (no API key configured)",
+                    "analysis", Map.of("totalSpending", 15000, "topCategories", List.of("Food"), "insights", "Mock analysis")
+                ));
+            }
+            
+            // Test the AI call directly
+            Map<String, Object> analysisData = aiAnalysisService.getLlmService().analyzeSpendingPatterns(request.getTransactions());
+            
+            return ResponseEntity.ok(Map.of(
+                "status", "success",
+                "message", "AI integration test successful",
+                "analysis", analysisData,
+                "model", aiAnalysisService.getLlmService().getModel(),
+                "provider", aiAnalysisService.getLlmService().getProvider()
+            ));
+            
+        } catch (RuntimeException e) {
+            if (e.getMessage().contains("quota exceeded")) {
+                return ResponseEntity.status(429).body(Map.of(
+                    "status", "quota_exceeded",
+                    "message", "OpenAI API quota exceeded. Please check your billing and plan details.",
+                    "error", e.getMessage()
+                ));
+            } else if (e.getMessage().contains("authentication failed") || e.getMessage().contains("access forbidden")) {
+                return ResponseEntity.status(401).body(Map.of(
+                    "status", "auth_failed",
+                    "message", "OpenAI API authentication failed. Please check your API key.",
+                    "error", e.getMessage()
+                ));
+            } else {
+                return ResponseEntity.status(500).body(Map.of(
+                    "status", "error",
+                    "message", "AI integration test failed",
+                    "error", e.getMessage()
+                ));
+            }
+        } catch (Exception e) {
+            logger.error("Unexpected error in AI test: {}", e.getMessage(), e);
+            return ResponseEntity.status(500).body(Map.of(
+                "status", "error",
+                "message", "Unexpected error occurred",
+                "error", e.getMessage()
+            ));
+        }
+    }
+    
+    /**
      * Health check for AI services
      * @return Service status
      */
@@ -156,5 +215,27 @@ public class AIAnalysisController {
                 "error", e.getMessage()
             ));
         }
+    }
+}
+
+class AIAnalysisRequest {
+    private Long userId;
+    private List<Map<String, Object>> transactions;
+
+    // Getters and Setters
+    public Long getUserId() {
+        return userId;
+    }
+
+    public void setUserId(Long userId) {
+        this.userId = userId;
+    }
+
+    public List<Map<String, Object>> getTransactions() {
+        return transactions;
+    }
+
+    public void setTransactions(List<Map<String, Object>> transactions) {
+        this.transactions = transactions;
     }
 } 

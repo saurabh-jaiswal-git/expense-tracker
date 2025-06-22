@@ -32,7 +32,7 @@ public interface LLMService {
      * @param transactions List of user transactions
      * @return Analysis results as a map
      */
-    Map<String, Object> analyzeSpendingPatterns(List<Transaction> transactions);
+    Map<String, Object> analyzeSpendingPatterns(List<Map<String, Object>> transactions);
     
     /**
      * Categorize a transaction based on its description

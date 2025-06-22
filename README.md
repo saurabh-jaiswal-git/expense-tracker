@@ -252,4 +252,49 @@ When resuming development:
 5. Authentication is configured (admin/admin)
 6. Next step is implementing repository interfaces and service layer
 
-The foundation is solid and ready for feature development! 
+The foundation is solid and ready for feature development!
+
+## 🔄 Configurable LLM Provider (OpenAI & Anthropic)
+
+This project supports both **OpenAI** and **Anthropic (Claude)** as LLM providers for AI-powered analysis.
+
+### Switching Providers
+
+Edit `src/main/resources/application.yml`:
+
+```yaml
+ai:
+  llm:
+    provider: openai    # or 'anthropic'
+    openai:
+      api-key: ${OPENAI_API_KEY:}
+      model: gpt-3.5-turbo
+    anthropic:
+      api-key: ${ANTHROPIC_API_KEY:}
+      model: claude-3-haiku-20240307
+```
+
+### Setting API Keys
+
+- **OpenAI:**  
+  `export OPENAI_API_KEY="your-openai-key"`
+- **Anthropic:**  
+  `export ANTHROPIC_API_KEY="your-anthropic-key"`
+
+Add these to your `~/.zshrc` or `~/.bashrc` for persistence.
+
+### Getting API Keys
+- [OpenAI API Keys](https://platform.openai.com/api-keys)
+- [Anthropic API Keys](https://console.anthropic.com/)
+
+### Testing the Integration
+Use the `/api/ai/test` endpoint to verify your setup. Example:
+
+```bash
+curl -X POST http://localhost:8080/api/ai/test \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Basic YWRtaW46YWRtaW4=" \
+  -d '{"userId": 1, "transactions": [{"description": "Coffee", "amount": 100, "category": "Food"}]}'
+```
+
+--- 

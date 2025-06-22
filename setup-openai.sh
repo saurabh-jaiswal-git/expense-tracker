@@ -1,0 +1,75 @@
+#!/bin/bash
+
+echo "🤖 OpenAI API Setup for Expense Tracker"
+echo "======================================"
+
+# Check if OPENAI_API_KEY is already set
+if [ -n "$OPENAI_API_KEY" ]; then
+    echo "✅ OPENAI_API_KEY is already set"
+    echo "Current key: ${OPENAI_API_KEY:0:10}..."
+else
+    echo "❌ OPENAI_API_KEY is not set"
+    echo ""
+    echo "To enable real OpenAI API calls:"
+    echo "1. Get your API key from https://platform.openai.com/api-keys"
+    echo "2. Set the environment variable:"
+    echo "   export OPENAI_API_KEY='your-api-key-here'"
+    echo ""
+    echo "3. Restart the application"
+    echo ""
+fi
+
+echo ""
+echo "🔧 Current Configuration:"
+echo "========================="
+echo "Application URL: http://localhost:8080"
+echo "Username: admin"
+echo "Password: admin"
+echo ""
+
+echo "🧪 Test Commands (with mock data):"
+echo "=================================="
+echo "1. Test AI Health:"
+echo "   curl -u admin:admin http://localhost:8080/api/ai/health"
+echo ""
+echo "2. Test Spending Analysis:"
+echo "   curl -u admin:admin -X POST http://localhost:8080/api/ai/analyze \\"
+echo "     -H \"Content-Type: application/json\" \\"
+echo "     -d '{\"userId\": 1, \"analysisType\": \"SPENDING_PATTERNS\", \"data\": {\"transactions\": [{\"amount\": 100, \"category\": \"Food\", \"date\": \"2024-01-15\"}]}}'"
+echo ""
+echo "3. Test Transaction Categorization:"
+echo "   curl -u admin:admin -X POST http://localhost:8080/api/ai/categorize \\"
+echo "     -H \"Content-Type: application/json\" \\"
+echo "     -d '{\"description\": \"Grocery shopping at Walmart\"}'"
+echo ""
+echo "4. Test Budget Recommendations:"
+echo "   curl -u admin:admin http://localhost:8080/api/ai/budget/1"
+echo ""
+
+if [ -n "$OPENAI_API_KEY" ]; then
+    echo "🚀 Real OpenAI API Calls Enabled!"
+    echo "=================================="
+    echo "The application will now make real calls to OpenAI API."
+    echo "Check the application logs to see the actual API requests."
+    echo ""
+    echo "Expected log messages:"
+    echo "- 'Making real OpenAI API call for user 1 with X transactions'"
+    echo "- 'Generated real spending analysis for user 1 in Xms using openai'"
+    echo ""
+else
+    echo "⚠️  Mock Mode Active"
+    echo "==================="
+    echo "The application is running in mock mode (no real API calls)."
+    echo "Set OPENAI_API_KEY to enable real OpenAI integration."
+    echo ""
+    echo "Expected log messages:"
+    echo "- 'LLM service is not available (no API key configured). Using mock data.'"
+    echo ""
+fi
+
+echo "📝 Next Steps:"
+echo "=============="
+echo "1. Start the application: ./mvnw spring-boot:run"
+echo "2. Test the endpoints using the curl commands above"
+echo "3. Check application logs for detailed information"
+echo "4. Set OPENAI_API_KEY to test real API integration" 

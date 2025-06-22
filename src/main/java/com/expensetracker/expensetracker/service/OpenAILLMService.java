@@ -6,6 +6,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Service;
 
 import java.io.IOException;
@@ -22,21 +23,22 @@ import java.util.stream.Collectors;
  * Handles API calls to OpenAI's GPT models for financial analysis
  */
 @Service
+@ConditionalOnProperty(name = "ai.llm.provider", havingValue = "openai", matchIfMissing = true)
 public class OpenAILLMService implements LLMService {
     
     private static final Logger logger = LoggerFactory.getLogger(OpenAILLMService.class);
     private static final String OPENAI_API_URL = "https://api.openai.com/v1/chat/completions";
     
-    @Value("${ai.llm.api-key:}")
+    @Value("${ai.llm.openai.api-key:}")
     private String apiKey;
     
-    @Value("${ai.llm.model:gpt-4}")
+    @Value("${ai.llm.openai.model:gpt-4}")
     private String model;
     
-    @Value("${ai.llm.max-tokens:1000}")
+    @Value("${ai.llm.openai.max-tokens:1000}")
     private int maxTokens;
     
-    @Value("${ai.llm.temperature:0.7}")
+    @Value("${ai.llm.openai.temperature:0.7}")
     private double temperature;
     
     private final HttpClient httpClient;
@@ -52,6 +54,10 @@ public class OpenAILLMService implements LLMService {
     @Override
     public String generateAnalysis(String prompt, Map<String, Object> context) {
         try {
+            if (!isAvailable()) {
+                logger.warn("OpenAI API key not configured, returning mock analysis");
+                return "Mock analysis: Based on the provided data, here are some general financial insights and recommendations.";
+            }
             String enhancedPrompt = buildEnhancedPrompt(prompt, context);
             return callOpenAI(enhancedPrompt);
         } catch (Exception e) {
@@ -63,6 +69,15 @@ public class OpenAILLMService implements LLMService {
     @Override
     public List<String> generateRecommendations(String userContext) {
         try {
+            if (!isAvailable()) {
+                logger.warn("OpenAI API key not configured, returning mock recommendations");
+                return Arrays.asList(
+                    "Reduce dining out expenses by cooking at home 3-4 times per week",
+                    "Create an emergency fund with 10% of your monthly income",
+                    "Review and cancel unused subscriptions",
+                    "Set up automatic savings transfers"
+                );
+            }
             String prompt = buildRecommendationPrompt(userContext);
             String response = callOpenAI(prompt);
             return parseRecommendations(response);
@@ -73,8 +88,17 @@ public class OpenAILLMService implements LLMService {
     }
     
     @Override
-    public Map<String, Object> analyzeSpendingPatterns(List<Transaction> transactions) {
+    public Map<String, Object> analyzeSpendingPatterns(List<Map<String, Object>> transactions) {
         try {
+            if (!isAvailable()) {
+                logger.warn("OpenAI API key not configured, returning mock spending analysis");
+                return Map.of(
+                    "totalSpending", 15000.0,
+                    "topCategories", Arrays.asList("Food", "Transportation", "Entertainment"),
+                    "insights", "You spend 40% of your income on food. Consider cooking at home more often to save money.",
+                    "suggestions", Arrays.asList("Reduce dining out", "Create a grocery budget", "Track daily expenses")
+                );
+            }
             String prompt = buildSpendingAnalysisPrompt(transactions);
             String response = callOpenAI(prompt);
             return parseAnalysisResponse(response);
@@ -87,6 +111,20 @@ public class OpenAILLMService implements LLMService {
     @Override
     public String categorizeTransaction(String description, List<Category> categories) {
         try {
+            if (!isAvailable()) {
+                logger.warn("OpenAI API key not configured, returning mock categorization");
+                // Simple mock categorization based on keywords
+                String lowerDesc = description.toLowerCase();
+                if (lowerDesc.contains("food") || lowerDesc.contains("grocery") || lowerDesc.contains("restaurant")) {
+                    return "Food";
+                } else if (lowerDesc.contains("uber") || lowerDesc.contains("taxi") || lowerDesc.contains("gas")) {
+                    return "Transportation";
+                } else if (lowerDesc.contains("movie") || lowerDesc.contains("netflix") || lowerDesc.contains("entertainment")) {
+                    return "Entertainment";
+                } else {
+                    return "Other";
+                }
+            }
             String prompt = buildCategorizationPrompt(description, categories);
             return callOpenAI(prompt).trim();
         } catch (Exception e) {
@@ -98,6 +136,10 @@ public class OpenAILLMService implements LLMService {
     @Override
     public String generateBudgetRecommendation(Double userIncome, Map<String, Double> currentSpending, List<String> goals) {
         try {
+            if (!isAvailable()) {
+                logger.warn("OpenAI API key not configured, returning mock budget recommendation");
+                return "Based on your income of " + userIncome + " INR, consider allocating 50% to needs, 30% to wants, and 20% to savings. Focus on reducing dining out expenses and building an emergency fund.";
+            }
             String prompt = buildBudgetPrompt(userIncome, currentSpending, goals);
             return callOpenAI(prompt);
         } catch (Exception e) {
@@ -109,6 +151,24 @@ public class OpenAILLMService implements LLMService {
     @Override
     public Map<String, Object> detectAnomalies(List<Transaction> transactions, Map<String, Object> historicalPatterns) {
         try {
+            if (!isAvailable()) {
+                logger.warn("OpenAI API key not configured, returning mock anomaly detection");
+                return Map.of(
+                    "anomalies", Arrays.asList(
+                        Map.of(
+                            "transactionId", "TXN001",
+                            "description", "Unusual high spending on dining",
+                            "amount", 2500.0,
+                            "expectedRange", "500-1500",
+                            "severity", "MEDIUM",
+                            "suggestion", "Review dining out frequency"
+                        )
+                    ),
+                    "totalAnomalies", 1,
+                    "riskLevel", "LOW",
+                    "insights", "One anomaly detected in recent transactions"
+                );
+            }
             String prompt = buildAnomalyDetectionPrompt(transactions, historicalPatterns);
             String response = callOpenAI(prompt);
             return parseAnalysisResponse(response);
@@ -169,10 +229,22 @@ public class OpenAILLMService implements LLMService {
         
         if (response.statusCode() != 200) {
             logger.error("OpenAI API error: {} - {}", response.statusCode(), response.body());
-            throw new RuntimeException("OpenAI API call failed: " + response.statusCode());
+            
+            if (response.statusCode() == 429) {
+                throw new RuntimeException("OpenAI API quota exceeded. Please check your billing and plan details. Error: " + response.body());
+            } else if (response.statusCode() == 401) {
+                throw new RuntimeException("OpenAI API authentication failed. Please check your API key. Error: " + response.body());
+            } else if (response.statusCode() == 403) {
+                throw new RuntimeException("OpenAI API access forbidden. Please check your API key permissions. Error: " + response.body());
+            } else {
+                throw new RuntimeException("OpenAI API call failed with status " + response.statusCode() + ": " + response.body());
+            }
         }
+
+        String responseBody = response.body();
+        logger.info("Raw OpenAI response: {}", responseBody);
         
-        Map<String, Object> responseMap = objectMapper.readValue(response.body(), Map.class);
+        Map<String, Object> responseMap = objectMapper.readValue(responseBody, Map.class);
         List<Map<String, Object>> choices = (List<Map<String, Object>>) responseMap.get("choices");
         Map<String, Object> firstChoice = choices.get(0);
         Map<String, Object> message = (Map<String, Object>) firstChoice.get("message");
@@ -209,38 +281,31 @@ public class OpenAILLMService implements LLMService {
         );
     }
     
-    private String buildSpendingAnalysisPrompt(List<Transaction> transactions) {
-        StringBuilder prompt = new StringBuilder();
-        prompt.append("Analyze the following spending transactions and provide insights:\n\n");
-        
-        Map<String, Double> categoryTotals = transactions.stream()
-                .collect(Collectors.groupingBy(
-                        t -> t.getCategory() != null ? t.getCategory().getName() : "Uncategorized",
-                        Collectors.summingDouble(t -> t.getAmount().doubleValue())
-                ));
-        
-        categoryTotals.forEach((category, total) -> 
-                prompt.append("- ").append(category).append(": ").append(total).append("\n"));
-        
-        prompt.append("\nPlease provide analysis in JSON format with the following structure:\n");
-        prompt.append("{\n");
-        prompt.append("  \"totalSpending\": number,\n");
-        prompt.append("  \"topCategories\": [\"category1\", \"category2\"],\n");
-        prompt.append("  \"insights\": \"analysis text\",\n");
-        prompt.append("  \"suggestions\": [\"suggestion1\", \"suggestion2\"]\n");
-        prompt.append("}");
-        
-        return prompt.toString();
+    private String buildSpendingAnalysisPrompt(List<Map<String, Object>> transactions) {
+        String transactionsJson = transactions.stream()
+                .map(t -> String.format("{\"description\":\"%s\",\"amount\":%.2f,\"category\":\"%s\"}",
+                        t.get("description"), t.get("amount"), t.get("category")))
+                .collect(Collectors.joining(","));
+
+        return "Analyze the following user transactions and provide a spending pattern analysis. " +
+                "Transactions: [" + transactionsJson + "]. " +
+                "Return a JSON object with the following fields: 'totalSpending' (double), 'topCategories' (list of strings), " +
+                "'insights' (string), and 'suggestions' (list of strings). " +
+                "ONLY return the raw JSON object, without any additional text, explanations, or markdown formatting.";
     }
     
     private String buildCategorizationPrompt(String description, List<Category> categories) {
+        List<String> categoryNames = categories.stream()
+                .map(Category::getName)
+                .collect(Collectors.toList());
+        
         StringBuilder prompt = new StringBuilder();
         prompt.append("Categorize the following transaction description into one of the available categories:\n\n");
         prompt.append("Transaction: ").append(description).append("\n\n");
         prompt.append("Available categories:\n");
         
-        categories.forEach(category -> 
-                prompt.append("- ").append(category.getName()).append("\n"));
+        categoryNames.forEach(name -> 
+                prompt.append("- ").append(name).append("\n"));
         
         prompt.append("\nRespond with only the category name, nothing else.");
         
@@ -285,18 +350,26 @@ public class OpenAILLMService implements LLMService {
     }
     
     private List<String> parseRecommendations(String response) {
-        return Arrays.stream(response.split("\n"))
-                .filter(line -> line.matches("^\\d+\\..*"))
-                .map(line -> line.replaceFirst("^\\d+\\.\\s*", ""))
-                .collect(Collectors.toList());
+        // Simple parsing assuming recommendations are separated by newlines
+        return Arrays.asList(response.split("\\r?\\n"));
     }
     
     private Map<String, Object> parseAnalysisResponse(String response) {
         try {
-            return objectMapper.readValue(response, Map.class);
-        } catch (Exception e) {
-            logger.warn("Failed to parse JSON response, returning as text: {}", e.getMessage());
-            return Map.of("analysis", response);
+            // Find the start and end of the JSON object
+            int jsonStart = response.indexOf("{");
+            int jsonEnd = response.lastIndexOf("}");
+
+            if (jsonStart != -1 && jsonEnd != -1 && jsonEnd > jsonStart) {
+                String jsonResponse = response.substring(jsonStart, jsonEnd + 1);
+                return objectMapper.readValue(jsonResponse, Map.class);
+            } else {
+                logger.warn("No valid JSON object found in OpenAI response: {}", response);
+                return Map.of("error", "Could not parse analysis from AI response.");
+            }
+        } catch (IOException e) {
+            logger.error("Failed to parse JSON response from OpenAI: {}", response, e);
+            return Map.of("error", "Failed to deserialize AI response.");
         }
     }
 } 
