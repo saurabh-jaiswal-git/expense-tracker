@@ -29,8 +29,8 @@ spring:
   # Security Configuration
   security:
     user:
-      name: ${ADMIN_USERNAME:admin}
-      password: ${ADMIN_PASSWORD:admin}
+      name: ""
+      password: ""
   
   # SQL Initialization (only data, not schema)
   sql:

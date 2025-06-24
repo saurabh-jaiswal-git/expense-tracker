@@ -19,10 +19,12 @@ import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 import org.springframework.security.config.Customizer;
 import org.springframework.security.config.http.SessionCreationPolicy;
+import org.springframework.context.annotation.Profile;
 
 import java.util.Arrays;
 import java.util.List;
 
+@Profile("!test")
 @Configuration
 @EnableWebSecurity
 @EnableMethodSecurity
@@ -37,33 +39,24 @@ public class SecurityConfig {
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http
-            // Disable CSRF protection for now to allow testing with curl
             .csrf(csrf -> csrf.disable())
-            .authorizeHttpRequests(authorize -> authorize
-                .requestMatchers("/actuator/**", "/h2-console/**", "/api/budgets/**").permitAll()
-                .anyRequest().authenticated()
+            .authorizeHttpRequests(auth -> auth
+                .anyRequest().permitAll()
             )
-            .httpBasic(Customizer.withDefaults())
-            .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
-            .headers(headers -> headers
-                .frameOptions(frameOptions -> frameOptions.sameOrigin()) // Allow H2 console frames
-                .httpStrictTransportSecurity(hsts -> hsts
-                    .maxAgeInSeconds(31536000)
-                )
-            );
+            .httpBasic(httpBasic -> httpBasic.disable())
+            .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS));
         return http.build();
     }
 
-    @Bean
-    public UserDetailsService userDetailsService() {
-        UserDetails admin = User.builder()
-            .username(adminUsername)
-            .password(passwordEncoder().encode(adminPassword))
-            .roles("ADMIN")
-            .build();
-        
-        return new InMemoryUserDetailsManager(admin);
-    }
+    // @Bean
+    // public UserDetailsService userDetailsService() {
+    //     UserDetails admin = User.builder()
+    //         .username(adminUsername)
+    //         .password(passwordEncoder().encode(adminPassword))
+    //         .roles("ADMIN")
+    //         .build();
+    //     return new InMemoryUserDetailsManager(admin);
+    // }
 
     @Bean
     public PasswordEncoder passwordEncoder() {

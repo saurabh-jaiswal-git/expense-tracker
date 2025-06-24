@@ -312,6 +312,42 @@ public class UserController {
         }
     }
 
+    /**
+     * Public registration endpoint
+     * @param request User registration request
+     * @return Created user or error if email exists
+     */
+    @PostMapping("/register")
+    public ResponseEntity<User> registerUser(@Valid @RequestBody CreateUserRequest request) {
+        try {
+            logger.info("Registering new user: {}", request.getEmail());
+            if (userRepository.findByEmail(request.getEmail()).isPresent()) {
+                logger.warn("User with email {} already exists", request.getEmail());
+                return ResponseEntity.badRequest().build();
+            }
+            User user = User.builder()
+                    .email(request.getEmail())
+                    .password(passwordEncoder.encode(request.getPassword()))
+                    .firstName(request.getFirstName())
+                    .lastName(request.getLastName())
+                    .phone(request.getPhone())
+                    .dateOfBirth(request.getDateOfBirth())
+                    .monthlyIncome(request.getMonthlyIncome())
+                    .currency(request.getCurrency())
+                    .timezone(request.getTimezone())
+                    .isActive(true)
+                    .createdAt(LocalDateTime.now())
+                    .updatedAt(LocalDateTime.now())
+                    .build();
+            User savedUser = userRepository.save(user);
+            logger.info("Successfully registered user with ID: {}", savedUser.getId());
+            return ResponseEntity.ok(savedUser);
+        } catch (Exception e) {
+            logger.error("Error registering user: {}", e.getMessage(), e);
+            return ResponseEntity.internalServerError().build();
+        }
+    }
+
     // Request DTOs
     public static class CreateUserRequest {
         @NotNull
