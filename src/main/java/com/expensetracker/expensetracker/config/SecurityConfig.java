@@ -30,10 +30,10 @@ import java.util.List;
 @EnableMethodSecurity
 public class SecurityConfig {
 
-    @Value("${spring.security.user.name}")
+    @Value("${spring.security.user.name:}")
     private String adminUsername;
 
-    @Value("${spring.security.user.password}")
+    @Value("${spring.security.user.password:}")
     private String adminPassword;
 
     @Bean
@@ -43,20 +43,26 @@ public class SecurityConfig {
             .authorizeHttpRequests(auth -> auth
                 .anyRequest().permitAll()
             )
-            .httpBasic(httpBasic -> httpBasic.disable())
+            .httpBasic(Customizer.withDefaults())
             .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS));
         return http.build();
     }
 
-    // @Bean
-    // public UserDetailsService userDetailsService() {
-    //     UserDetails admin = User.builder()
-    //         .username(adminUsername)
-    //         .password(passwordEncoder().encode(adminPassword))
-    //         .roles("ADMIN")
-    //         .build();
-    //     return new InMemoryUserDetailsManager(admin);
-    // }
+    @Bean
+    public UserDetailsService userDetailsService() {
+        // Only create in-memory user if username and password are provided
+        if (adminUsername != null && !adminUsername.trim().isEmpty() && 
+            adminPassword != null && !adminPassword.trim().isEmpty()) {
+            UserDetails admin = User.builder()
+                .username(adminUsername)
+                .password(passwordEncoder().encode(adminPassword))
+                .roles("ADMIN")
+                .build();
+            return new InMemoryUserDetailsManager(admin);
+        }
+        // Return empty user details manager if no credentials provided
+        return new InMemoryUserDetailsManager();
+    }
 
     @Bean
     public PasswordEncoder passwordEncoder() {
