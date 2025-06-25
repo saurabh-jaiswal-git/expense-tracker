@@ -2,8 +2,10 @@ package com.expensetracker.expensetracker.controller;
 
 import com.expensetracker.expensetracker.entity.Transaction;
 import com.expensetracker.expensetracker.entity.User;
+import com.expensetracker.expensetracker.entity.Category;
 import com.expensetracker.expensetracker.repository.TransactionRepository;
 import com.expensetracker.expensetracker.repository.UserRepository;
+import com.expensetracker.expensetracker.repository.CategoryRepository;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -40,6 +42,9 @@ public class TransactionController {
 
     @Autowired
     private UserRepository userRepository;
+
+    @Autowired
+    private CategoryRepository categoryRepository;
 
     /**
      * Get all transactions for a user with pagination
@@ -96,7 +101,7 @@ public class TransactionController {
             User user = userRepository.findById(request.getUserId())
                     .orElseThrow(() -> new IllegalArgumentException("User not found: " + request.getUserId()));
 
-            Transaction transaction = Transaction.builder()
+            Transaction.TransactionBuilder builder = Transaction.builder()
                     .user(user)
                     .amount(request.getAmount())
                     .currency(request.getCurrency())
@@ -105,9 +110,16 @@ public class TransactionController {
                     .transactionTime(request.getTransactionTime())
                     .description(request.getDescription())
                     .notes(request.getNotes())
-                    .sourceType(Transaction.SourceType.MANUAL)
-                    .build();
+                    .sourceType(Transaction.SourceType.MANUAL);
 
+            // Set category if provided
+            if (request.getCategoryId() != null) {
+                Category category = categoryRepository.findById(request.getCategoryId())
+                        .orElseThrow(() -> new IllegalArgumentException("Category not found: " + request.getCategoryId()));
+                builder.category(category);
+            }
+
+            Transaction transaction = builder.build();
             Transaction savedTransaction = transactionRepository.save(transaction);
             logger.info("Successfully created transaction with ID: {}", savedTransaction.getId());
             return ResponseEntity.ok(savedTransaction);
@@ -297,6 +309,9 @@ public class TransactionController {
 
         private String notes;
 
+        @Positive
+        private Long categoryId;
+
         // Getters and setters
         public Long getUserId() { return userId; }
         public void setUserId(Long userId) { this.userId = userId; }
@@ -321,6 +336,9 @@ public class TransactionController {
 
         public String getNotes() { return notes; }
         public void setNotes(String notes) { this.notes = notes; }
+
+        public Long getCategoryId() { return categoryId; }
+        public void setCategoryId(Long categoryId) { this.categoryId = categoryId; }
     }
 
     public static class UpdateTransactionRequest {

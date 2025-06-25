@@ -24,7 +24,7 @@ import org.springframework.context.annotation.Profile;
 import java.util.Arrays;
 import java.util.List;
 
-@Profile("!test")
+@Profile("!test & !local")
 @Configuration
 @EnableWebSecurity
 @EnableMethodSecurity

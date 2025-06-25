@@ -76,4 +76,26 @@ public interface TransactionRepository extends JpaRepository<Transaction, Long> 
     @Query("SELECT t FROM Transaction t WHERE t.user.id = :userId AND t.amount > :threshold ORDER BY t.amount DESC")
     List<Transaction> findByUserIdAndAmountGreaterThanOrderByAmountDesc(
             @Param("userId") Long userId, @Param("threshold") java.math.BigDecimal threshold);
+    
+    // ========================================================================
+    // OPTIMIZED COUNT QUERIES FOR STRATEGY SELECTION
+    // ========================================================================
+    
+    /**
+     * Fast count of transactions for a user from a start date (for strategy selection)
+     */
+    @Query("SELECT COUNT(t) FROM Transaction t WHERE t.user.id = :userId AND t.transactionDate >= :startDate")
+    long countByUserIdAndStartDate(@Param("userId") Long userId, @Param("startDate") LocalDate startDate);
+    
+    /**
+     * Fast count of transactions for a user until an end date (for strategy selection)
+     */
+    @Query("SELECT COUNT(t) FROM Transaction t WHERE t.user.id = :userId AND t.transactionDate <= :endDate")
+    long countByUserIdAndEndDate(@Param("userId") Long userId, @Param("endDate") LocalDate endDate);
+    
+    /**
+     * Sample transactions for complexity analysis (top 100 most recent)
+     */
+    @Query("SELECT t FROM Transaction t WHERE t.user.id = :userId AND t.transactionDate BETWEEN :startDate AND :endDate ORDER BY t.transactionDate DESC")
+    List<Transaction> findTop100ByUserIdAndDateRangeOrderByDateDesc(@Param("userId") Long userId, @Param("startDate") LocalDate startDate, @Param("endDate") LocalDate endDate);
 } 
