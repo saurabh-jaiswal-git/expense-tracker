@@ -1,54 +1,92 @@
-import React, { useEffect, useState } from 'react';
-import { Text, View, ScrollView, ActivityIndicator } from 'react-native';
-import Constants from 'expo-constants';
-import axios from 'axios';
-
-type Category = {
-  id: number;
-  name: string;
-  // Add other fields if needed
-};
-
-const API_BASE_URL = Constants?.expoConfig?.extra?.API_BASE_URL || 'http://localhost:8080';
+import React from 'react';
+import { View, Text, StyleSheet } from 'react-native';
+import BackgroundPattern from '@/components/BackgroundPattern';
 
 export default function HomeScreen() {
-  const [categories, setCategories] = useState<Category[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState('');
-
-  useEffect(() => {
-    axios.get(`${API_BASE_URL}/api/categories`)
-      .then(res => {
-        console.log('Fetched categories response:', res);
-        console.log('Fetched categories res.data:', res.data);
-        const arr = Array.isArray(res.data) ? res.data : Array.isArray(res.data.data) ? res.data.data : [];
-        setCategories(arr);
-        setLoading(false);
-      })
-      .catch(err => {
-        console.error('Error fetching categories:', err);
-        setError('Failed to fetch categories');
-        setLoading(false);
-      });
-  }, []);
-
-  console.log('Categories state before render:', categories);
   return (
-    <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', padding: 20, backgroundColor: '#222' }}>
-      <Text style={{ color: 'white', fontWeight: 'bold', fontSize: 18, marginBottom: 10 }}>DEBUG: HomeScreen Mounted</Text>
-      <Text style={{ fontWeight: 'bold', fontSize: 18, marginBottom: 10 }}>Expense Tracker Mobile</Text>
-      <Text>API Base URL: {API_BASE_URL}</Text>
-      <Text style={{ color: 'white' }}>Categories count: {categories.length}</Text>
-      <Text style={{ marginVertical: 10, fontWeight: 'bold' }}>Categories:</Text>
-      {loading && <ActivityIndicator />}
-      {error ? <Text style={{ color: 'red' }}>{error}</Text> : null}
-      <ScrollView style={{ width: '100%' }}>
-        {categories.map(cat => (
-          <Text key={cat.id} style={{ color: 'white', padding: 5, borderBottomWidth: 1, borderColor: '#eee' }}>
-            {cat.name}
-          </Text>
-        ))}
-      </ScrollView>
+    <View style={styles.container}>
+      <BackgroundPattern />
+      <View style={styles.logoContainer}>
+        <View style={styles.logoCircle}>
+          <Text style={styles.logoText}>💸</Text>
+        </View>
+      </View>
+      <Text style={styles.title}>Welcome to WalletBuddy</Text>
+      <Text style={styles.subtitle}>Your smart, AI-powered expense tracker</Text>
+      <View style={styles.card}>
+        <Text style={styles.cardTitle}>Get Started</Text>
+        <Text style={styles.cardBody}>Add your first transaction, set a budget, or explore analytics from the tabs below.</Text>
+      </View>
     </View>
   );
-} 
+}
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: 'transparent',
+    padding: 24,
+  },
+  logoContainer: {
+    marginBottom: 18,
+    alignItems: 'center',
+  },
+  logoCircle: {
+    width: 72,
+    height: 72,
+    borderRadius: 36,
+    backgroundColor: '#0a7ea4',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 8,
+    shadowColor: '#0a7ea4',
+    shadowOpacity: 0.2,
+    shadowRadius: 8,
+    shadowOffset: { width: 0, height: 2 },
+    elevation: 4,
+  },
+  logoText: {
+    fontSize: 36,
+    color: '#fff',
+  },
+  title: {
+    fontSize: 28,
+    fontWeight: 'bold',
+    color: '#0a7ea4',
+    marginBottom: 8,
+    textAlign: 'center',
+  },
+  subtitle: {
+    fontSize: 18,
+    color: '#fff',
+    marginBottom: 18,
+    textAlign: 'center',
+  },
+  card: {
+    backgroundColor: '#2d2d2d',
+    borderRadius: 16,
+    padding: 24,
+    alignItems: 'center',
+    shadowColor: '#0a7ea4',
+    shadowOpacity: 0.08,
+    shadowRadius: 8,
+    shadowOffset: { width: 0, height: 2 },
+    elevation: 2,
+    marginTop: 8,
+    maxWidth: 340,
+  },
+  cardTitle: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    color: '#4ECDC4',
+    marginBottom: 6,
+    textAlign: 'center',
+  },
+  cardBody: {
+    fontSize: 15,
+    color: '#bbb',
+    textAlign: 'center',
+  },
+}); 
