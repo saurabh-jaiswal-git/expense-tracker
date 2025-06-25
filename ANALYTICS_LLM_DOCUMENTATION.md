@@ -8,6 +8,10 @@
 5. [API Endpoints Design](#api-endpoints-design)
 6. [Frontend Integration Points](#frontend-integration-points)
 7. [Implementation Roadmap](#implementation-roadmap)
+8. [Large Dataset Handling & Strategy Selection](#large-dataset-handling-and-strategy-selection)
+9. [Null-Safety & Category Awareness](#null-safety-and-category-awareness)
+10. [Frontend Integration](#frontend-integration)
+11. [End-to-End Testing](#end-to-end-testing)
 
 ---
 
@@ -612,6 +616,39 @@ Frontend → API Gateway → Analytics Service → LLM Service → Database
 - [ ] Caching implementation
 - [ ] Error handling improvements
 - [ ] User experience enhancements
+
+---
+
+## Large Dataset Handling & Strategy Selection
+
+- The backend uses a `DataStrategyService` to automatically select the optimal analytics strategy:
+  - **RAW_DATA**: For small datasets (<100 transactions), sends all data to the LLM for maximum detail.
+  - **INTELLIGENT_SUMMARY**: For medium datasets (100-1000), pre-aggregates and summarizes data before LLM analysis.
+  - **CHUNKED_PROCESSING**: For large datasets (>1000), processes data in chunks and aggregates insights.
+- The `/api/smart-analytics/spending-analysis/{userId}` endpoint returns which strategy was used, along with insights and metadata.
+
+## Null-Safety & Category Awareness
+
+- All analytics endpoints are robust against missing/null data and always provide a category breakdown (never just "Other").
+- Category-aware analytics ensure that spending is accurately attributed and visualized.
+
+## Frontend Integration
+
+- The React/Next.js frontend integrates with analytics endpoints using REST APIs and React Query hooks.
+- See `FRONTEND_SPECIFICATION.md` for detailed UI integration patterns and data mapping.
+- Key endpoints:
+  - `/api/llm-analytics/spending-insights/{userId}`
+  - `/api/smart-analytics/spending-analysis/{userId}`
+  - `/api/analytics/chat/{userId}`
+  - `/api/analytics/recommendations/{userId}`
+
+## End-to-End Testing
+
+- The `test_expense_tracker_e2e.py` script validates the full analytics flow, including category-aware insights and large dataset handling.
+- Run with:
+  ```bash
+  python3 test_expense_tracker_e2e.py
+  ```
 
 ---
 

@@ -1,6 +1,6 @@
 # AI-Powered Expense Tracker
 
-A comprehensive expense tracking application with AI-powered analysis and budget management capabilities.
+A comprehensive expense tracking application with AI-powered analysis, budget management, and advanced analytics capabilities.
 
 ## 🚀 Features
 
@@ -11,23 +11,13 @@ A comprehensive expense tracking application with AI-powered analysis and budget
 - **AI-Powered Analysis**: Intelligent spending insights using OpenAI and Anthropic
 - **RESTful API**: Complete REST endpoints for all operations
 
-### Phase 2 (In Progress 🔄)
-- **Budget Management**: ✅ **COMPLETED** - Comprehensive budget planning and tracking
-  - Monthly budget creation and management
-  - Category-based budget allocation
-  - Real-time spending tracking and status updates
-  - Comprehensive error handling and validation
-  - Full test coverage (31 test cases)
-  - Production-ready API endpoints
-- **Financial Goals**: ✅ **COMPLETED** - Goal setting and tracking
-  - Financial goal creation and management
-  - Progress tracking with percentage calculation
-  - Goal types: SAVINGS, DEBT_PAYOFF, INVESTMENT
-  - Status management: ACTIVE, COMPLETED, CANCELLED
-  - Real-time progress updates
-  - Full integration testing completed
-- **Advanced Analytics**: ❌ **NOT STARTED** - Enhanced reporting and insights
-- **Receipt Management**: ❌ **NOT STARTED** - Receipt upload and processing
+### Phase 2 (Completed ✅)
+- **Budget Management**: Comprehensive budget planning and tracking
+- **Financial Goals**: Goal setting and tracking
+- **LLM-Powered Analytics**: Unified, natural-language analytics and recommendations
+- **Smart Analytics (Strategy-Driven)**: Automatic selection of optimal analytics strategy for large datasets
+- **End-to-End Testing**: Automated Python script for full user lifecycle and analytics validation
+- **Profile-Aware Security**: Local/test/prod security profiles for safe development and CI
 
 ## 📊 Current Project Status
 
@@ -37,46 +27,16 @@ A comprehensive expense tracking application with AI-powered analysis and budget
 3. **Category Management** (Phase 1)
 4. **User Management** (Phase 1)
 5. **AI Integration** (Phase 1)
-6. **Budget Management** (Phase 2 - Complete)
-7. **Financial Goals** (Phase 2 - Complete)
+6. **Budget Management** (Phase 2)
+7. **Financial Goals** (Phase 2)
+8. **LLM & Smart Analytics** (Phase 2)
 
-### 🔄 Phase 2 Remaining Work
-1. **Advanced Analytics & Reporting** - Spending trends, category reports, budget vs actual
-2. **Receipt Management** - Receipt upload, OCR processing, expense extraction
+### 🎯 Next Steps
+- **Receipt Management**: Receipt upload, OCR processing, expense extraction
 
-### 🎯 Next Session Starting Point
-- **Current Focus**: Advanced Analytics & Reporting module
-- **Next Steps**: Create analytics DTOs, service, and controller
-- **Testing Status**: Budget and Goals modules fully tested with comprehensive error scenarios
+## 🖥️ API Endpoints
 
-## 🛠 Technology Stack
-
-- **Backend**: Spring Boot 3.5.3, Java 17
-- **Database**: H2 (in-memory for development)
-- **AI Integration**: OpenAI GPT-4, Anthropic Claude
-- **Testing**: JUnit 5, Mockito, Spring Boot Test
-- **Build Tool**: Maven
-- **Documentation**: OpenAPI/Swagger (planned)
-
-## 🚀 Quick Start
-
-### Prerequisites
-- Java 17 or higher
-- Maven 3.6+
-- OpenAI API key (optional, for AI features)
-- Anthropic API key (optional, for AI features)
-
-### Installation
-1. Clone the repository
-2. Copy `env.example` to `.env` and configure your API keys
-3. Run the application:
-   ```bash
-   ./mvnw spring-boot:run
-   ```
-
-### API Endpoints
-
-#### Budget Management (Phase 2 - Complete)
+### Budget Management
 ```bash
 # Create budget
 POST /api/budgets?userId=1
@@ -104,7 +64,7 @@ PUT /api/budgets/1/spending
 }
 ```
 
-#### Financial Goals (Phase 2 - Complete)
+### Financial Goals
 ```bash
 # Create goal
 POST /api/goals?userId=1
@@ -127,7 +87,7 @@ PUT /api/goals/1/progress
 GET /api/goals/user/1
 ```
 
-#### Transaction Management (Phase 1 - Complete)
+### Transaction Management
 ```bash
 # Get transaction summary
 GET /api/transactions/summary?userId=1
@@ -143,7 +103,7 @@ POST /api/transactions
 }
 ```
 
-#### User Management (Phase 1 - Complete)
+### User Management
 ```bash
 # Register new user
 POST /api/users/register
@@ -158,6 +118,27 @@ POST /api/users/register
 GET /api/users/check-email/user@example.com
 ```
 
+### LLM & Smart Analytics (Phase 2 - Complete)
+```bash
+# LLM-Powered Spending Insights
+GET /api/llm-analytics/spending-insights/{userId}
+
+# Smart Analytics (Strategy-Driven)
+GET /api/smart-analytics/spending-analysis/{userId}
+GET /api/smart-analytics/strategy-recommendations/{userId}
+GET /api/smart-analytics/strategy-comparison/{userId}
+GET /api/smart-analytics/performance-metrics/{userId}
+
+# Conversational Analytics
+POST /api/analytics/chat/{userId}
+{
+  "question": "How much did I spend on food last month?"
+}
+
+# Personalized Recommendations
+GET /api/analytics/recommendations/{userId}
+```
+
 ## 🧪 Testing
 
 ### Run All Tests
@@ -165,28 +146,30 @@ GET /api/users/check-email/user@example.com
 ./mvnw test
 ```
 
-### Run Specific Test Suites
-```bash
-# Budget module tests
-./mvnw test -Dtest=BudgetServiceTest
-./mvnw test -Dtest=BudgetControllerTest
+### End-to-End Test Script
+- See `test_expense_tracker_e2e.py` for a full user lifecycle and analytics validation.
+- **Covers:** Registration, category/budget/goal creation, 300+ transactions, LLM & Smart Analytics endpoints.
+- **Run:**
+  ```bash
+  python3 test_expense_tracker_e2e.py
+  ```
 
-# Goals module tests
-./mvnw test -Dtest=GoalServiceTest
-./mvnw test -Dtest=GoalControllerTest
+## 🔒 Security
+- Profile-based security: `local`, `test`, and `prod` profiles for safe development and CI.
+- Test profile disables authentication for integration tests.
+- Local profile allows all requests for local development.
 
-# Transaction module tests
-./mvnw test -Dtest=TransactionControllerTest
-```
+## 🖼️ Frontend Integration
+- **React/Next.js** frontend integrates with all analytics endpoints using REST APIs.
+- **Key hooks/components:**
+  - `useQuery(['llm-spending-insights', userId], ...)` → `/api/llm-analytics/spending-insights/{userId}`
+  - `useQuery(['smart-spending-analysis', userId], ...)` → `/api/smart-analytics/spending-analysis/{userId}`
+  - Chat interface → `/api/analytics/chat/{userId}`
+  - Recommendations page → `/api/analytics/recommendations/{userId}`
+- **Charts:** Pie, line, bar, and progress charts visualize analytics data.
+- **WebSocket:** Real-time budget/goal/anomaly notifications.
 
-### Test Coverage
-- **Budget Module**: 31 test cases (100% coverage)
-- **Goals Module**: Full integration testing completed
-- **User Management**: Complete endpoint testing
-- **Error Scenarios**: Comprehensive validation and error handling
-- **Integration Tests**: Full API endpoint testing
-
-## 📁 Project Structure
+## 🗂️ Project Structure
 
 ```
 src/
@@ -229,7 +212,7 @@ src/
 - [x] Advanced Analytics (Not Started)
 - [x] Receipt Management (Not Started)
 
-## 🎯 **Current Status Summary**
+## 🏁 Current Status Summary
 
 ### ✅ **What's Working**
 - **Application**: Running successfully on http://localhost:8080
@@ -273,6 +256,6 @@ src/
 
 This project is licensed under the MIT License.
 
-## 🆘 Support
+## 🏛️ Support
 
 For questions or issues, please check the documentation or create an issue in the repository. 

@@ -101,6 +101,19 @@ const response = await insights.json();
 // response.data.charts = [{ type: "line", data: [...] }]
 ```
 
+## Intelligent Strategy Selection
+
+- The backend uses a `DataStrategyService` to select the optimal analytics strategy based on transaction count:
+  - **RAW_DATA** (<100): Full data to LLM for detail
+  - **INTELLIGENT_SUMMARY** (100-1000): Pre-aggregated summary to LLM
+  - **CHUNKED_PROCESSING** (>1000): Chunked analysis and aggregation
+- The `/api/smart-analytics/spending-analysis/{userId}` endpoint returns which strategy was used, insights, and metadata.
+
+## Frontend Integration
+
+- The React/Next.js frontend calls analytics endpoints using REST APIs and React Query hooks.
+- See `FRONTEND_SPECIFICATION.md` for integration details and data mapping.
+
 ## Benefits of This Approach
 
 ### 1. **Simpler Codebase**

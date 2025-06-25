@@ -130,24 +130,16 @@ private String executeIntelligentSummaryStrategy(Long userId, LocalDate startDat
 ### 1. Smart Spending Analysis
 
 ```http
-GET /api/smart-analytics/spending-analysis/{userId}?startDate=2024-01-01&endDate=2024-12-31
+GET /api/smart-analytics/spending-analysis/{userId}?startDate=YYYY-MM-DD&endDate=YYYY-MM-DD
 ```
-
-**Response**:
+Returns:
 ```json
 {
   "userId": 1,
-  "insights": "Based on your spending analysis...",
+  "insights": "...",
   "strategy": "INTELLIGENT_SUMMARY",
   "transactionCount": 250,
-  "metadata": {
-    "strategy": "INTELLIGENT_SUMMARY",
-    "transactionCount": 250,
-    "performanceMetrics": {
-      "strategySelectionTime": "~0.6ms",
-      "countQueryTime": "~0.5ms"
-    }
-  },
+  "metadata": { ... },
   "analysisType": "smart_automated"
 }
 ```
@@ -155,83 +147,33 @@ GET /api/smart-analytics/spending-analysis/{userId}?startDate=2024-01-01&endDate
 ### 2. Strategy Recommendations
 
 ```http
-GET /api/smart-analytics/strategy-recommendations/{userId}?startDate=2024-01-01&endDate=2024-12-31
+GET /api/smart-analytics/strategy-recommendations/{userId}?startDate=YYYY-MM-DD&endDate=YYYY-MM-DD
 ```
-
-**Response**:
-```json
-{
-  "userId": 1,
-  "recommendedStrategy": "INTELLIGENT_SUMMARY",
-  "transactionCount": 250,
-  "reasoning": "Dataset is medium-sized (250 transactions), summary analysis balances detail and performance",
-  "estimatedPerformance": {
-    "estimatedTokens": 200,
-    "estimatedResponseTime": "1-3 seconds",
-    "costEfficiency": "Very High (optimized)"
-  }
-}
-```
+Returns recommended strategy and reasoning.
 
 ### 3. Strategy Comparison
 
 ```http
-GET /api/smart-analytics/strategy-comparison/{userId}?startDate=2024-01-01&endDate=2024-12-31
+GET /api/smart-analytics/strategy-comparison/{userId}?startDate=YYYY-MM-DD&endDate=YYYY-MM-DD
 ```
+Returns comparison of all strategies and recommended one.
 
-**Response**:
-```json
-{
-  "userId": 1,
-  "transactionCount": 250,
-  "strategies": {
-    "RAW_DATA": {
-      "applicable": false,
-      "estimatedTokens": 5000,
-      "estimatedResponseTime": "2-5 seconds",
-      "advantages": "Maximum detail, complete transaction visibility",
-      "disadvantages": "High token usage, slower for large datasets"
-    },
-    "INTELLIGENT_SUMMARY": {
-      "applicable": true,
-      "estimatedTokens": 200,
-      "estimatedResponseTime": "1-3 seconds",
-      "advantages": "Fast, cost-effective, pattern-focused",
-      "disadvantages": "Less granular detail"
-    },
-    "CHUNKED_PROCESSING": {
-      "applicable": false,
-      "estimatedTokens": 500,
-      "estimatedResponseTime": "5-15 seconds",
-      "advantages": "Handles any dataset size, complete analysis",
-      "disadvantages": "Slower, more complex processing"
-    }
-  },
-  "recommendedStrategy": "INTELLIGENT_SUMMARY"
-}
+### 4. Performance Metrics
+
+```http
+GET /api/smart-analytics/performance-metrics/{userId}?startDate=YYYY-MM-DD&endDate=YYYY-MM-DD
 ```
+Returns performance metrics for strategy selection.
 
-## Performance Benefits
+---
 
-### 1. Database Optimization
+## Null-Safety & Category Handling
+- All analytics endpoints are robust against missing/null data and always provide a category breakdown.
+- Category-aware analytics ensure spending is accurately attributed and visualized.
 
-- **Before**: Load all transactions to count them (expensive)
-- **After**: Use indexed COUNT queries (fast)
-
-### 2. Memory Efficiency
-
-- **Before**: Load thousands of transactions into memory
-- **After**: Only count transactions, load data only when needed
-
-### 3. Scalability
-
-- **Before**: Performance degrades with dataset size
-- **After**: Strategy selection remains fast regardless of dataset size
-
-### 4. Cost Optimization
-
-- **Before**: Send all data to LLM (expensive)
-- **After**: Send only what's needed based on strategy
+## Frontend Integration
+- The React/Next.js frontend integrates with these endpoints using REST APIs and React Query hooks.
+- See `FRONTEND_SPECIFICATION.md` for detailed UI integration patterns and data mapping.
 
 ## Usage Examples
 
